@@ -6,11 +6,23 @@
 ![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-green.svg)
 
-A complete microservices solution built with .NET 8, featuring an **Ocelot Multi-Route API Gateway** (one route file per microservice), multiple microservices using Minimal APIs, Docker containerization, and Docker Compose orchestration.
+A complete microservices solution built with .NET 8, featuring a **centralized Ocelot Multi-Route API Gateway** that provides a unified entry point for multiple microservices. This gateway implements a **multi-route per microservice architecture** where each microservice has its own dedicated route configuration file, enabling independent route management, environment-agnostic routing through placeholder resolution, and fine-grained QoS (Quality of Service) controls per route. The solution includes multiple microservices using Minimal APIs, Docker containerization, Docker Compose orchestration, Health Checks UI dashboard, unified Swagger documentation aggregation, and multi-authentication support with JWT Bearer tokens (Identity service and SSO/OKTA).
 
 ## 🎯 What is Multi-Route Gateway?
 
-This solution implements a **multi-route per microservice** architecture where each microservice has its own dedicated route configuration file. Instead of managing all routes in a single monolithic `ocelot.json` file, routes are organized into separate files per service (e.g., `ocelot.user.api.json`, `ocelot.order.api.json`, `ocelot.product.api.json`), which are dynamically loaded from a `routes` folder.
+This solution implements a **centralized API Gateway built with Ocelot** that provides a unified entry point for multiple microservices. The gateway uses a **multi-route per microservice architecture** where each microservice has its own dedicated route configuration file. Instead of managing all routes in a single monolithic `ocelot.json` file, routes are organized into separate files per service (e.g., `ocelot.user.api.json`, `ocelot.order.api.json`, `ocelot.product.api.json`), which are dynamically loaded from a `routes` folder.
+
+### Key Gateway Capabilities:
+
+- **Unified Entry Point**: Single API Gateway (Port 5000) routes requests to multiple microservices
+- **Multiple Routes Per Microservice**: Each service can have multiple endpoints configured (GET, POST, PUT, DELETE, etc.)
+- **Environment-Agnostic Routing**: Uses placeholder resolution (`{UserService}`, `{OrderService}`) via GlobalHosts configuration for seamless deployment across environments
+- **Authentication & Authorization**: Supports multiple JWT Bearer authentication schemes (Identity service and SSO/OKTA) with policy-based authorization per route
+- **Response Aggregation**: Can aggregate responses from multiple services (via Swagger aggregation and health check aggregation)
+- **Unified Swagger Documentation**: Aggregates Swagger/OpenAPI documentation from all microservices into a single UI with service dropdown selection
+- **Health Monitoring**: Health Checks UI dashboard provides real-time monitoring of all services
+- **QoS Controls**: Fine-grained Quality of Service settings (timeouts, circuit breakers, retry policies) configurable per route
+- **Independent Route Management**: Each microservice team can manage their own route file without affecting others
 
 ## 🏗️ Solution Architecture
 
@@ -24,8 +36,8 @@ This solution implements a **multi-route per microservice** architecture where e
     │         │          │          │
 ┌───▼───┐ ┌──▼───┐  ┌───▼───┐  ┌───▼────┐
 │ User  │ │Order │  │Product│  │ ...    │
-│Service│ │Service│  │Service│  │        │
-│ :5001 │ │ :5002│  │ :5003│  │        │
+│Service│ │Service│ │Service│  │        │
+│ :5001 │ │ :5002│  │ :5003 │  │        │
 └───────┘ └──────┘  └───────┘  └────────┘
 ```
 
@@ -84,7 +96,7 @@ ocelot-multi-route-gateway/
 
 ### Gateway (Ocelot)
 - ✅ Centralized routing to microservices
-- ✅ Multi-authentication schemes (JWT Bearer and OpenID Connect)
+- ✅ Multi-authentication schemes (JWT Bearer - Identity service and SSO/OKTA)
 - ✅ Built-in .NET logging (ILogger)
 - ✅ Circuit breaker and retry policies (Polly integration)
 - ✅ **Health Checks UI Dashboard** - Real-time health monitoring with visual dashboard
@@ -434,26 +446,57 @@ Invoke-RestMethod -Uri "http://localhost:5000/api/users" -Method Post -Body $bod
 
 ## 🔐 JWT Authentication
 
-The gateway is configured with JWT authentication. To use authenticated endpoints:
+The gateway supports **multiple JWT Bearer authentication schemes**:
 
-1. **Configure JWT settings** in `src/Gateway/appsettings.json`:
-   ```json
-   "JwtSettings": {
-     "SecretKey": "YourSuperSecretKeyThatShouldBeAtLeast32CharactersLong!",
-     "Issuer": "Gateway",
-     "Audience": "Microservices",
-     "ExpirationMinutes": 60
-   }
-   ```
+### Authentication Schemes
 
-2. **Generate a JWT token** (you'll need to implement a token generation endpoint or use an identity service)
+1. **Identity Scheme** - JWT tokens from your Identity service
+   - Uses symmetric key validation
+   - Configured via `JwtSettings` in `appsettings.json`
 
-3. **Include the token in requests:**
+2. **SSO Scheme** - JWT tokens from OKTA SSO
+   - Uses OKTA authority for token validation
+   - Configured via `SsoSettings` in `appsettings.json`
+
+### Configuration
+
+**Identity Service JWT Settings** in `src/Gateway/appsettings.json`:
+```json
+"JwtSettings": {
+  "SecretKey": "YourSuperSecretKeyThatShouldBeAtLeast32CharactersLong!",
+  "Issuer": "UserService",
+  "Audience": "Microservices",
+  "ExpirationMinutes": 60
+}
+```
+
+**SSO/OKTA Settings** in `src/Gateway/appsettings.json`:
+```json
+"SsoSettings": {
+  "Authority": "https://your-okta-domain.okta.com/oauth2/default",
+  "Audience": "api://default"
+}
+```
+
+### Using Authentication
+
+1. **Generate a JWT token** from your Identity service or OKTA
+   - Identity service: Use `/api/token/generate` endpoint on UserService
+   - OKTA: Use OKTA's token generation flow
+
+2. **Include the token in requests:**
    ```bash
    curl -H "Authorization: Bearer YOUR_JWT_TOKEN" http://localhost:5000/api/users
    ```
 
-**Note:** Currently, JWT authentication is configured but not enforced on all routes. You can modify `ocelot.json` to require authentication on specific routes.
+3. **Route Configuration**: Routes can specify which authentication scheme to use:
+   ```json
+   "AuthenticationOptions": {
+     "AuthenticationProviderKeys": [ "Identity" ]  // or "SSO"
+   }
+   ```
+
+**Note:** Authentication is configured per route. Routes with `AuthenticationOptions` will require a valid JWT token from the specified scheme.
 
 ## ⚙️ Configuration
 
@@ -529,7 +572,7 @@ Each route file contains service-specific routes:
   - `ExceptionsAllowedBeforeBreaking`: Number of exceptions before opening circuit
   - `DurationOfBreak`: How long the circuit stays open (ms)
   - `TimeoutValue`: Request timeout (ms)
-- **AuthenticationOptions:** JWT/OpenID Connect authentication per route
+- **AuthenticationOptions:** JWT Bearer authentication per route (Identity or SSO scheme)
 - **SwaggerKey:** Links routes to Swagger documentation aggregation
 
 #### QoS Configuration Example
