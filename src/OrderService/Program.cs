@@ -1,4 +1,6 @@
 using System.Collections.Concurrent;
+using HealthChecks.UI.Client;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -30,7 +32,10 @@ var app = builder.Build();
 // Always enable Swagger JSON endpoint for gateway integration
 app.UseSwagger();
 
-app.UseHealthChecks("/health");
+app.UseHealthChecks("/health", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+{
+    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+});
 
 // Order endpoints
 app.MapGet("/api/orders", () =>

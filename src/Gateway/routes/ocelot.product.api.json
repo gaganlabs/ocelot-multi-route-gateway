@@ -10,7 +10,12 @@
       ],
       "UpstreamPathTemplate": "/ProductService/swagger/v1/swagger.json",
       "UpstreamHttpMethod": [ "GET" ],
-      "SwaggerKey": "ProductService"
+      "SwaggerKey": "ProductService",
+      "QoSOptions": {
+        "ExceptionsAllowedBeforeBreaking": 0,
+        "DurationOfBreak": 0,
+        "TimeoutValue": 3000
+      }
     },
     {
       "DownstreamPathTemplate": "/api/products",
@@ -25,6 +30,11 @@
       "SwaggerKey": "ProductService",
       "AuthenticationOptions": {
         "AuthenticationProviderKeys": [ "Identity" ]
+      },
+      "QoSOptions": {
+        "ExceptionsAllowedBeforeBreaking": 3,
+        "DurationOfBreak": 1000,
+        "TimeoutValue": 5000
       }
     },
     {
@@ -40,6 +50,11 @@
       "SwaggerKey": "ProductService",
       "AuthenticationOptions": {
         "AuthenticationProviderKeys": [ "Identity" ]
+      },
+      "QoSOptions": {
+        "ExceptionsAllowedBeforeBreaking": 3,
+        "DurationOfBreak": 1000,
+        "TimeoutValue": 5000
       }
     },
     {
@@ -55,6 +70,11 @@
       "SwaggerKey": "ProductService",
       "AuthenticationOptions": {
         "AuthenticationProviderKeys": [ "Identity" ]
+      },
+      "QoSOptions": {
+        "ExceptionsAllowedBeforeBreaking": 3,
+        "DurationOfBreak": 1000,
+        "TimeoutValue": 5000
       }
     },
     {
@@ -70,6 +90,11 @@
       "SwaggerKey": "ProductService",
       "AuthenticationOptions": {
         "AuthenticationProviderKeys": [ "Identity" ]
+      },
+      "QoSOptions": {
+        "ExceptionsAllowedBeforeBreaking": 3,
+        "DurationOfBreak": 1000,
+        "TimeoutValue": 5000
       }
     },
     {
@@ -82,7 +107,12 @@
       ],
       "UpstreamPathTemplate": "/health/products",
       "UpstreamHttpMethod": [ "GET" ],
-      "SwaggerKey": "ProductService"
+      "SwaggerKey": "ProductService",
+      "QoSOptions": {
+        "ExceptionsAllowedBeforeBreaking": 0,
+        "DurationOfBreak": 0,
+        "TimeoutValue": 2000
+      }
     }
   ]
 }

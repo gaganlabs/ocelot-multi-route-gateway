@@ -10,7 +10,12 @@
       ],
       "UpstreamPathTemplate": "/UserService/swagger/v1/swagger.json",
       "UpstreamHttpMethod": [ "GET" ],
-      "SwaggerKey": "UserService"
+      "SwaggerKey": "UserService",
+      "QoSOptions": {
+        "ExceptionsAllowedBeforeBreaking": 0,
+        "DurationOfBreak": 0,
+        "TimeoutValue": 3000
+      }
     },
     {
       "DownstreamPathTemplate": "/api/users",
@@ -25,6 +30,11 @@
       "SwaggerKey": "UserService",
       "AuthenticationOptions": {
         "AuthenticationProviderKeys": [ "Identity" ]
+      },
+      "QoSOptions": {
+        "ExceptionsAllowedBeforeBreaking": 3,
+        "DurationOfBreak": 1000,
+        "TimeoutValue": 5000
       }
     },
     {
@@ -40,6 +50,11 @@
       "SwaggerKey": "UserService",
       "AuthenticationOptions": {
         "AuthenticationProviderKeys": [ "Identity" ]
+      },
+      "QoSOptions": {
+        "ExceptionsAllowedBeforeBreaking": 3,
+        "DurationOfBreak": 1000,
+        "TimeoutValue": 5000
       }
     },
     {
@@ -52,7 +67,12 @@
       ],
       "UpstreamPathTemplate": "/api/token/generate",
       "UpstreamHttpMethod": [ "POST" ],
-      "SwaggerKey": "UserService"
+      "SwaggerKey": "UserService",
+      "QoSOptions": {
+        "ExceptionsAllowedBeforeBreaking": 5,
+        "DurationOfBreak": 2000,
+        "TimeoutValue": 3000
+      }
     },
     {
       "DownstreamPathTemplate": "/api/token/validate",
@@ -64,7 +84,12 @@
       ],
       "UpstreamPathTemplate": "/api/token/validate",
       "UpstreamHttpMethod": [ "POST" ],
-      "SwaggerKey": "UserService"
+      "SwaggerKey": "UserService",
+      "QoSOptions": {
+        "ExceptionsAllowedBeforeBreaking": 5,
+        "DurationOfBreak": 2000,
+        "TimeoutValue": 3000
+      }
     },
     {
       "DownstreamPathTemplate": "/health",
@@ -76,7 +101,12 @@
       ],
       "UpstreamPathTemplate": "/health/users",
       "UpstreamHttpMethod": [ "GET" ],
-      "SwaggerKey": "UserService"
+      "SwaggerKey": "UserService",
+      "QoSOptions": {
+        "ExceptionsAllowedBeforeBreaking": 0,
+        "DurationOfBreak": 0,
+        "TimeoutValue": 2000
+      }
     }
   ]
 }

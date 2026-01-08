@@ -1,6 +1,10 @@
-# .NET 8 Microservices with Ocelot API Gateway
+# .NET 8 Microservices with Ocelot Multi-Route API Gateway
 
-A complete microservices solution built with .NET 8, featuring an Ocelot API Gateway, multiple microservices using Minimal APIs, Docker containerization, and Docker Compose orchestration.
+A complete microservices solution built with .NET 8, featuring an **Ocelot Multi-Route API Gateway** (one route file per microservice), multiple microservices using Minimal APIs, Docker containerization, and Docker Compose orchestration.
+
+## 🎯 What is Multi-Route Gateway?
+
+This solution implements a **multi-route per microservice** architecture where each microservice has its own dedicated route configuration file. Instead of managing all routes in a single monolithic `ocelot.json` file, routes are organized into separate files per service (e.g., `ocelot.user.api.json`, `ocelot.order.api.json`, `ocelot.product.api.json`), which are dynamically loaded from a `routes` folder.
 
 ## 🏗️ Solution Architecture
 
@@ -33,7 +37,17 @@ ocelot-multi-route-gateway/
     │   ├── Program.cs
     │   ├── appsettings.json
     │   ├── appsettings.Development.json
-    │   ├── ocelot.json        # Ocelot routing configuration
+    │   ├── ocelot.json        # Base Ocelot configuration
+    │   ├── routes/            # Multi-route configuration files
+    │   │   ├── ocelot.global.json
+    │   │   ├── ocelot.user.api.json      # UserService routes
+    │   │   ├── ocelot.order.api.json     # OrderService routes
+    │   │   ├── ocelot.product.api.json   # ProductService routes
+    │   │   └── ocelot.SwaggerEndPoints.json
+    │   ├── Extensions/        # Custom extensions
+    │   │   ├── AddOcelotRoute.cs
+    │   │   ├── AuthenticationExtensions.cs
+    │   │   └── ...
     │   └── Dockerfile
     ├── UserService/           # User Management Microservice
     │   ├── UserService.csproj
@@ -54,13 +68,25 @@ ocelot-multi-route-gateway/
 
 ## 🚀 Features
 
+### Multi-Route Gateway Architecture
+- ✅ **Separate route files per microservice** - Each service has its own route configuration file
+- ✅ **Dynamic route loading** - Routes are automatically loaded from the `routes` folder at startup
+- ✅ **Environment-agnostic routing** - Uses placeholder resolution (`{UserService}`, `{OrderService}`) via GlobalHosts configuration
+- ✅ **Centralized service URLs** - Service endpoints managed in `appsettings.json` GlobalHosts section
+- ✅ **Hot-reload support** - Route files support reload on change for development
+- ✅ **Swagger aggregation per service** - Each service's Swagger documentation is aggregated in the gateway
+
 ### Gateway (Ocelot)
 - ✅ Centralized routing to microservices
-- ✅ JWT Authentication
+- ✅ Multi-authentication schemes (JWT Bearer and OpenID Connect)
 - ✅ Request/Response logging with Serilog
-- ✅ Circuit breaker and retry policies
-- ✅ Health check aggregation
-- ✅ Swagger UI for API documentation
+- ✅ Circuit breaker and retry policies (Polly integration)
+- ✅ **Health Checks UI Dashboard** - Real-time health monitoring with visual dashboard
+- ✅ Health check aggregation for all services
+- ✅ Unified Swagger UI for all services
+- ✅ CORS support with environment-based configuration
+- ✅ Custom pipeline configuration for request/response transformation
+- ✅ **QoS (Quality of Service) options per route** - Configurable timeouts, circuit breakers, and retry policies
 
 ### Microservices
 - ✅ Minimal APIs (.NET 8)
@@ -74,6 +100,44 @@ ocelot-multi-route-gateway/
 - ✅ Docker Compose for orchestration
 - ✅ Service-to-service communication via Docker network
 - ✅ Environment-based configuration
+- ✅ Placeholder-based service discovery
+
+## 🔍 Why Multi-Route Per Microservice?
+
+### 1. **Better Organization & Maintainability**
+   - Each microservice team can manage their own route file independently
+   - Routes are logically grouped by service, making it easier to find and modify specific routes
+   - Reduces merge conflicts when multiple teams work on different services
+
+### 2. **Scalability**
+   - As you add more microservices, you simply add a new route file instead of modifying a large monolithic configuration
+   - Easier to onboard new services without touching existing route configurations
+   - Supports microservices architecture growth without configuration complexity
+
+### 3. **Environment Flexibility**
+   - Uses placeholder-based routing (`{UserService}`, `{OrderService}`) that resolves from `GlobalHosts` configuration
+   - Same route files work across development, staging, and production environments
+   - Service URLs are centralized in `appsettings.json`, making environment-specific deployments easier
+
+### 4. **Independent Deployment**
+   - Service teams can update their routes without affecting other services
+   - Route changes are isolated to specific service files
+   - Reduces risk of breaking changes affecting multiple services
+
+### 5. **Easier Testing & Development**
+   - Developers can work on route configurations for their service in isolation
+   - Route files can be version controlled independently
+   - Easier to review route changes in pull requests
+
+### 6. **Configuration Management**
+   - Clear separation of concerns - each service owns its routing configuration
+   - Easier to understand which routes belong to which service
+   - Better documentation through file naming conventions
+
+### 7. **Reduced Configuration Complexity**
+   - Smaller, focused configuration files are easier to understand and maintain
+   - Less scrolling through a massive single configuration file
+   - Better IDE performance with smaller JSON files
 
 ## 📋 Prerequisites
 
@@ -155,21 +219,30 @@ Before you begin, ensure you have the following installed:
    dotnet run --urls "http://localhost:5000"
    ```
 
-   **Note:** When running locally, update `ocelot.json` to use `localhost` instead of service names:
-   ```json
-   "DownstreamHostAndPorts": [
-     {
-       "Host": "localhost",
-       "Port": 5001
-     }
-   ]
-   ```
+   **Note:** When running locally, the `GlobalHosts` configuration in `appsettings.json` already uses `localhost`. The placeholder resolution (`{UserService}`, etc.) will automatically use these values. No manual route file changes needed!
 
 ## 🧪 Testing the Solution
 
 ### 1. Health Checks
 
-Check if services are running:
+#### Health Checks UI Dashboard
+
+Access the **Health Checks UI Dashboard** for real-time monitoring:
+
+- **Dashboard URL:** http://localhost:5000/health-ui
+- **API Endpoint:** http://localhost:5000/health-ui-api
+
+The dashboard provides:
+- ✅ Real-time health status of all services
+- ✅ Visual indicators (green/yellow/red) for service health
+- ✅ Automatic polling every 10 seconds
+- ✅ Health history tracking (last 50 entries per endpoint)
+- ✅ Detailed health check information per service
+- ✅ Duration and execution time tracking
+
+#### Health Check Endpoints
+
+Check individual service health via API:
 
 ```bash
 # Gateway health
@@ -185,14 +258,54 @@ curl http://localhost:5000/health/orders
 curl http://localhost:5000/health/products
 ```
 
+All health endpoints return JSON in the Health Checks UI-compatible format.
+
 ### 2. Swagger Documentation
 
 Access Swagger UI for each service:
 
-- **Gateway:** http://localhost:5000/swagger
-- **UserService:** http://localhost:5001/swagger
-- **OrderService:** http://localhost:5002/swagger
-- **ProductService:** http://localhost:5003/swagger
+- **Gateway (Aggregated):** http://localhost:5000/swagger
+- **UserService (Direct):** http://localhost:5001/swagger
+- **OrderService (Direct):** http://localhost:5002/swagger
+- **ProductService (Direct):** http://localhost:5003/swagger
+
+**Note:** The gateway provides a unified Swagger UI that aggregates all service APIs. Use the dropdown to switch between services.
+
+#### Swagger UI with Microservices Dropdown
+
+The gateway's Swagger UI displays all microservices in a dropdown menu, allowing you to view and test APIs from different services in one place:
+
+![Swagger UI Microservices Dropdown](docs/images/swagger-microservices-dropdown.png)
+
+*Screenshot showing the Swagger UI with the "Select a definition" dropdown menu displaying:*
+- *Order Service API - v1 (currently selected)*
+- *User Service API - v1*
+- *Product Service API - v1*
+
+*The dropdown allows users to switch between different microservice APIs and view their respective endpoints, schemas, and test the APIs directly from the unified Swagger interface.*
+
+**What the screenshot shows:**
+
+The Swagger UI interface with:
+- **Top Right:** "Select a definition" dropdown menu (open/expanded)
+- **Available Services:**
+  - Order Service API - v1
+  - User Service API - v1  
+  - Product Service API - v1
+- **Main Content Area:** Shows the selected service's API documentation with endpoints, schemas, and an "Authorize" button
+- **API Endpoints:** Displayed in collapsible panels showing GET, POST, PUT, DELETE operations for each service
+
+**To capture this screenshot:**
+1. Start all services (gateway and microservices)
+2. Navigate to http://localhost:5000/swagger
+3. Look for the dropdown/select menu at the top of the Swagger UI (usually labeled with service names)
+4. Click on the dropdown to see all configured microservices (UserService, OrderService, ProductService)
+5. Capture a screenshot showing the dropdown menu with service options visible
+6. Save the screenshot as `docs/images/swagger-microservices-dropdown.png`
+
+**📸 Detailed instructions:** See [docs/images/SCREENSHOT_INSTRUCTIONS.md](docs/images/SCREENSHOT_INSTRUCTIONS.md) for step-by-step guidance on capturing the screenshot.
+
+**Note:** If the screenshot file doesn't exist yet, you can add it to the `docs/images/` directory. The image will be displayed here once added.
 
 ### 3. API Testing via Gateway
 
@@ -350,14 +463,90 @@ environment:
 
 ### Ocelot Configuration
 
-The routing configuration is in `src/Gateway/ocelot.json`. Key features:
+The gateway uses a **multi-route configuration** approach:
 
-- **Routes:** Define upstream and downstream paths
-- **QoSOptions:** Circuit breaker and timeout settings
+#### Base Configuration (`ocelot.json`)
+- Contains global settings and base URL configuration
+- Located at `src/Gateway/ocelot.json`
+
+#### Service-Specific Route Files (`routes/` folder)
+- **`ocelot.user.api.json`** - All routes for UserService
+- **`ocelot.order.api.json`** - All routes for OrderService
+- **`ocelot.product.api.json`** - All routes for ProductService
+- **`ocelot.global.json`** - Global gateway configuration
+- **`ocelot.SwaggerEndPoints.json`** - Swagger endpoint aggregation configuration
+
+#### GlobalHosts Configuration (`appsettings.json`)
+Routes use placeholders like `{UserService}` that are resolved from the `GlobalHosts` section:
+
+```json
+"GlobalHosts": {
+  "UserService": "http://localhost:5001",
+  "OrderService": "http://localhost:5002",
+  "ProductService": "http://localhost:5003"
+}
+```
+
+This allows:
+- **Environment flexibility**: Same route files work in dev/staging/prod
+- **Centralized management**: Update service URLs in one place
+- **Docker support**: Override via environment variables in `docker-compose.yml`
+
+#### Route File Structure Example
+Each route file contains service-specific routes:
+
+```json
+{
+  "Routes": [
+    {
+      "DownstreamPathTemplate": "/api/users",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "{UserService}"  // Resolved from GlobalHosts
+        }
+      ],
+      "UpstreamPathTemplate": "/api/users",
+      "UpstreamHttpMethod": [ "GET", "POST" ],
+      "SwaggerKey": "UserService",
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [ "Identity" ]
+      }
+    }
+  ]
+}
+```
+
+#### Key Configuration Features
+- **Routes:** Define upstream and downstream paths per service
+- **QoSOptions:** Circuit breaker and timeout settings (configured per route)
   - `ExceptionsAllowedBeforeBreaking`: Number of exceptions before opening circuit
   - `DurationOfBreak`: How long the circuit stays open (ms)
   - `TimeoutValue`: Request timeout (ms)
-- **AuthenticationOptions:** JWT authentication settings
+- **AuthenticationOptions:** JWT/OpenID Connect authentication per route
+- **SwaggerKey:** Links routes to Swagger documentation aggregation
+
+#### QoS Configuration Example
+Each route can have custom QoS settings:
+
+```json
+{
+  "DownstreamPathTemplate": "/api/users",
+  "UpstreamPathTemplate": "/api/users",
+  "UpstreamHttpMethod": [ "GET", "POST" ],
+  "QoSOptions": {
+    "ExceptionsAllowedBeforeBreaking": 3,
+    "DurationOfBreak": 1000,
+    "TimeoutValue": 5000
+  }
+}
+```
+
+**QoS Settings by Route Type:**
+- **API Routes:** Standard QoS (3 exceptions, 1000ms break, 5000ms timeout)
+- **Token Routes:** More lenient (5 exceptions, 2000ms break, 3000ms timeout)
+- **Health Check Routes:** No circuit breaker (0 exceptions, 0ms break, 2000ms timeout)
+- **Swagger Routes:** No circuit breaker (0 exceptions, 0ms break, 3000ms timeout)
 
 ### Service Ports
 
@@ -389,22 +578,71 @@ Log levels can be configured in `appsettings.json`:
 }
 ```
 
-## 🔄 Circuit Breaker & Retry Policies
+## 🔄 Circuit Breaker & Retry Policies (QoS)
 
-Ocelot includes circuit breaker and retry policies configured in `ocelot.json`:
+The gateway implements **Quality of Service (QoS)** options with circuit breaker and retry policies configured **per route** in the route files. This allows fine-grained control over resilience patterns for different endpoints.
+
+### QoS Configuration
+
+QoS options are configured in each route file (e.g., `ocelot.user.api.json`, `ocelot.order.api.json`). Each route can have different QoS settings based on its requirements:
 
 ```json
-"QoSOptions": {
-  "ExceptionsAllowedBeforeBreaking": 3,
-  "DurationOfBreak": 1000,
-  "TimeoutValue": 5000
+{
+  "Routes": [
+    {
+      "DownstreamPathTemplate": "/api/users",
+      "UpstreamPathTemplate": "/api/users",
+      "QoSOptions": {
+        "ExceptionsAllowedBeforeBreaking": 3,
+        "DurationOfBreak": 1000,
+        "TimeoutValue": 5000
+      }
+    }
+  ]
 }
 ```
 
-This means:
-- After 3 exceptions, the circuit opens
-- Circuit stays open for 1000ms
-- Requests timeout after 5000ms
+### QoS Parameters
+
+- **`ExceptionsAllowedBeforeBreaking`**: Number of consecutive exceptions before the circuit breaker opens
+  - `0` = Circuit breaker disabled (for critical routes like health checks)
+  - `3-5` = Standard for API routes
+  - Higher values = More lenient (for token generation, etc.)
+
+- **`DurationOfBreak`**: How long the circuit stays open (in milliseconds)
+  - `0` = No circuit breaker
+  - `1000-2000` = Standard break duration
+
+- **`TimeoutValue`**: Request timeout in milliseconds
+  - `2000-3000` = Fast endpoints (health checks, tokens)
+  - `5000` = Standard API endpoints
+  - Higher values = Long-running operations
+
+### Default QoS Settings
+
+| Route Type | Exceptions | Break Duration | Timeout |
+|------------|-----------|----------------|---------|
+| API Routes | 3 | 1000ms | 5000ms |
+| Token Routes | 5 | 2000ms | 3000ms |
+| Health Checks | 0 (disabled) | 0ms | 2000ms |
+| Swagger | 0 (disabled) | 0ms | 3000ms |
+
+### How It Works
+
+1. **Normal Operation**: Requests flow through normally
+2. **Exception Threshold**: After the configured number of exceptions, the circuit opens
+3. **Circuit Open**: All requests fail immediately without calling the downstream service
+4. **Recovery**: After the break duration, the circuit enters a half-open state
+5. **Testing**: A test request is allowed through to check if the service recovered
+6. **Closed**: If successful, the circuit closes and normal operation resumes
+
+### Benefits
+
+- ✅ **Resilience**: Prevents cascading failures
+- ✅ **Performance**: Fast failure for known unhealthy services
+- ✅ **Resource Protection**: Reduces load on failing services
+- ✅ **Customizable**: Different settings per route type
+- ✅ **Automatic Recovery**: Self-healing when services recover
 
 ## 🐳 Docker Commands
 
@@ -460,36 +698,294 @@ docker exec -it <container-id> /bin/bash
 
 ## 🧩 Adding a New Microservice
 
-To add a new microservice:
+Follow these steps to add a new microservice to the gateway:
 
-1. **Create the service project:**
+### Step 1: Create the Service Project
+
+```bash
+dotnet new web -n NewService -o src/NewService
+```
+
+### Step 2: Implement the Service
+
+1. **Add Minimal API endpoints** in `src/NewService/Program.cs`
+2. **Add health checks with UI-compatible format**:
+   ```csharp
+   using HealthChecks.UI.Client;
+   using Microsoft.Extensions.Diagnostics.HealthChecks;
+   
+   builder.Services.AddHealthChecks();
+   
+   // In Program.cs, configure health check endpoint:
+   app.UseHealthChecks("/health", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+   {
+       ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+   });
+   ```
+3. **Add required NuGet package** to `NewService.csproj`:
+   ```xml
+   <PackageReference Include="AspNetCore.HealthChecks.UI.Client" Version="8.0.1" />
+   ```
+4. **Configure Swagger** (if not already configured):
+   ```csharp
+   builder.Services.AddEndpointsApiExplorer();
+   builder.Services.AddSwaggerGen();
+   ```
+
+### Step 3: Create Dockerfile
+
+Create `src/NewService/Dockerfile` similar to existing services:
+
+```dockerfile
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
+WORKDIR /app
+EXPOSE 5004
+
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+WORKDIR /src
+COPY ["src/NewService/NewService.csproj", "src/NewService/"]
+RUN dotnet restore "src/NewService/NewService.csproj"
+COPY . .
+WORKDIR "/src/src/NewService"
+RUN dotnet build "NewService.csproj" -c Release -o /app/build
+
+FROM build AS publish
+RUN dotnet publish "NewService.csproj" -c Release -o /app/publish
+
+FROM base AS final
+WORKDIR /app
+COPY --from=publish /app/publish .
+ENTRYPOINT ["dotnet", "NewService.dll"]
+```
+
+### Step 4: Add Service to Docker Compose
+
+Add the service to `docker-compose.yml`:
+
+```yaml
+newservice:
+  build:
+    context: .
+    dockerfile: src/NewService/Dockerfile
+    args:
+      BUILD_CONFIGURATION: Release
+  container_name: new-service
+  ports:
+    - "5004:5004"
+  environment:
+    - ASPNETCORE_ENVIRONMENT=Production
+    - ASPNETCORE_URLS=http://0.0.0.0:5004
+  networks:
+    - microservices-network
+  restart: unless-stopped
+```
+
+**Update the gateway service** to include the new service in `depends_on`:
+
+```yaml
+gateway:
+  depends_on:
+    - userservice
+    - orderservice
+    - productservice
+    - newservice  # Add this
+  environment:
+    # ... existing environment variables ...
+    - GlobalHosts__NewService=http://newservice:5004  # Add this
+```
+
+### Step 5: Create Route Configuration File
+
+Create `src/Gateway/routes/ocelot.newservice.api.json`:
+
+```json
+{
+  "Routes": [
+    {
+      "DownstreamPathTemplate": "/swagger/v1/swagger.json",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "{NewService}"
+        }
+      ],
+      "UpstreamPathTemplate": "/NewService/swagger/v1/swagger.json",
+      "UpstreamHttpMethod": [ "GET" ],
+      "SwaggerKey": "NewService",
+      "QoSOptions": {
+        "ExceptionsAllowedBeforeBreaking": 0,
+        "DurationOfBreak": 0,
+        "TimeoutValue": 3000
+      }
+    },
+    {
+      "DownstreamPathTemplate": "/api/newservice",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "{NewService}"
+        }
+      ],
+      "UpstreamPathTemplate": "/api/newservice",
+      "UpstreamHttpMethod": [ "GET", "POST" ],
+      "SwaggerKey": "NewService",
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [ "Identity" ]
+      },
+      "QoSOptions": {
+        "ExceptionsAllowedBeforeBreaking": 3,
+        "DurationOfBreak": 1000,
+        "TimeoutValue": 5000
+      }
+    },
+    {
+      "DownstreamPathTemplate": "/api/newservice/{id}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "{NewService}"
+        }
+      ],
+      "UpstreamPathTemplate": "/api/newservice/{id}",
+      "UpstreamHttpMethod": [ "GET", "PUT", "DELETE" ],
+      "SwaggerKey": "NewService",
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [ "Identity" ]
+      },
+      "QoSOptions": {
+        "ExceptionsAllowedBeforeBreaking": 3,
+        "DurationOfBreak": 1000,
+        "TimeoutValue": 5000
+      }
+    },
+    {
+      "DownstreamPathTemplate": "/health",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "{NewService}"
+        }
+      ],
+      "UpstreamPathTemplate": "/health/newservice",
+      "UpstreamHttpMethod": [ "GET" ],
+      "SwaggerKey": "NewService",
+      "QoSOptions": {
+        "ExceptionsAllowedBeforeBreaking": 0,
+        "DurationOfBreak": 0,
+        "TimeoutValue": 2000
+      }
+    }
+  ]
+}
+```
+
+**Important Notes:**
+- Use `{NewService}` as the placeholder for the host (matches the key in GlobalHosts)
+- Set `SwaggerKey` to match your service name (used for Swagger aggregation)
+- Configure `AuthenticationOptions` as needed for your routes
+
+### Step 6: Update GlobalHosts Configuration
+
+Add the service to `src/Gateway/appsettings.json`:
+
+```json
+"GlobalHosts": {
+  "UserService": "http://localhost:5001",
+  "OrderService": "http://localhost:5002",
+  "ProductService": "http://localhost:5003",
+  "NewService": "http://localhost:5004"  // Add this
+}
+```
+
+### Step 7: Add Swagger Endpoint Configuration
+
+Update `src/Gateway/routes/ocelot.SwaggerEndPoints.json`:
+
+```json
+{
+  "SwaggerEndPoints": [
+    // ... existing endpoints ...
+    {
+      "Key": "NewService",
+      "TransformByOcelotConfig": true,
+      "Config": [
+        {
+          "Name": "New Service API",
+          "Version": "v1",
+          "Url": "http://localhost:5000/NewService/swagger/v1/swagger.json"
+        }
+      ]
+    }
+  ]
+}
+```
+
+### Step 8: Add Health Checks UI Endpoint
+
+Update `src/Gateway/Program.cs` to add the new service to Health Checks UI:
+
+```csharp
+builder.Services.AddHealthChecksUI(setup =>
+{
+    // ... existing endpoints ...
+    setup.AddHealthCheckEndpoint("NewService", $"{baseUrl}/health/newservice");
+})
+.AddInMemoryStorage();
+```
+
+### Step 9: Add Project to Solution
+
+```bash
+dotnet sln add src/NewService/NewService.csproj
+```
+
+### Step 10: Verify Configuration
+
+1. **For local development**, ensure `appsettings.json` has the correct localhost URL
+2. **For Docker**, ensure `docker-compose.yml` has the correct service name and port
+3. **Route file naming**: Must follow pattern `ocelot.{servicename}.api.json`
+4. **GlobalHosts key**: Must match the placeholder used in route files (e.g., `{NewService}`)
+
+### Step 11: Test the Integration
+
+1. **Build and start services:**
    ```bash
-   dotnet new web -n NewService -o src/NewService
+   docker-compose up --build
    ```
 
-2. **Add Minimal API endpoints** in `Program.cs`
-
-3. **Create Dockerfile** similar to existing services
-
-4. **Add to docker-compose.yml:**
-   ```yaml
-   newservice:
-     build:
-       context: .
-       dockerfile: src/NewService/Dockerfile
-     container_name: new-service
-     ports:
-       - "5004:5004"
-     networks:
-       - microservices-network
-   ```
-
-5. **Add route to `ocelot.json`**
-
-6. **Add project to solution:**
+2. **Verify health check:**
    ```bash
-   dotnet sln add src/NewService/NewService.csproj
+   curl http://localhost:5000/health/newservice
    ```
+
+3. **Check Health Checks UI:**
+   - Navigate to http://localhost:5000/health-ui
+   - Verify your new service appears in the dashboard with healthy status
+
+4. **Test API endpoint:**
+   ```bash
+   curl http://localhost:5000/api/newservice
+   ```
+
+5. **Check Swagger UI:**
+   - Navigate to http://localhost:5000/swagger
+   - Verify your new service appears in the Swagger dropdown
+
+### Quick Checklist
+
+- [ ] Service project created with Minimal APIs
+- [ ] Health checks configured with UIResponseWriter
+- [ ] AspNetCore.HealthChecks.UI.Client package added
+- [ ] Dockerfile created
+- [ ] Service added to `docker-compose.yml`
+- [ ] Route file created with QoS options in `src/Gateway/routes/ocelot.{servicename}.api.json`
+- [ ] Service added to `GlobalHosts` in `appsettings.json`
+- [ ] Swagger endpoint added to `ocelot.SwaggerEndPoints.json`
+- [ ] Health Checks UI endpoint added in `Program.cs`
+- [ ] Project added to solution file
+- [ ] Gateway `depends_on` updated in `docker-compose.yml`
+- [ ] Gateway environment variable added for GlobalHosts
+- [ ] Tested locally and in Docker
 
 ## 🐛 Troubleshooting
 
@@ -501,9 +997,12 @@ To add a new microservice:
 
 ### Gateway returns 404
 
-- Check `ocelot.json` routing configuration
+- Check route files in `src/Gateway/routes/` folder
+- Verify the route file follows naming convention: `ocelot.{servicename}.api.json`
+- Check `GlobalHosts` configuration in `appsettings.json` matches placeholders in route files
 - Verify downstream services are running
 - Check service URLs match the configuration
+- Ensure route file is being loaded (check gateway startup logs)
 
 ### Port already in use
 

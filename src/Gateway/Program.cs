@@ -4,6 +4,9 @@ using MMLib.SwaggerForOcelot.DependencyInjection;
 using Ocelot.DependencyInjection;
 using Ocelot.Middleware;
 using Ocelot.Provider.Polly;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
+using HealthChecks.UI.Client;
+using HealthChecks.UI;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -77,7 +80,32 @@ builder.Services.AddCors(options =>
 });
 
 // Add Health Checks
-builder.Services.AddHealthChecks();
+builder.Services.AddHealthChecks()
+    .AddCheck("self", () => HealthCheckResult.Healthy("Gateway is healthy"));
+
+// Get base URL for health checks
+// Try appsettings.json first, then Ocelot GlobalConfiguration, then fallback to default
+var baseUrl = builder.Configuration.GetValue<string>("BaseUrl")
+    ?? builder.Configuration.GetSection("GlobalConfiguration:BaseUrl").Value 
+    ?? "http://localhost:5000";
+
+// Add Health Checks UI
+// The UI will monitor health endpoints through the gateway routes
+// Use full URLs to avoid 0.0.0.0 binding issues
+builder.Services.AddHealthChecksUI(setup =>
+{
+    setup.SetEvaluationTimeInSeconds(10); // Check every 10 seconds
+    setup.MaximumHistoryEntriesPerEndpoint(50); // Keep last 50 entries
+    
+    // Use full URLs instead of relative paths
+    setup.AddHealthCheckEndpoint("Gateway", $"{baseUrl}/health");
+    
+    // Add downstream service health check endpoints (through gateway routes)
+    setup.AddHealthCheckEndpoint("UserService", $"{baseUrl}/health/users");
+    setup.AddHealthCheckEndpoint("OrderService", $"{baseUrl}/health/orders");
+    setup.AddHealthCheckEndpoint("ProductService", $"{baseUrl}/health/products");
+})
+.AddInMemoryStorage();
 
 var app = builder.Build();
 
@@ -96,7 +124,18 @@ app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.UseHealthChecks("/health");
+// Health check endpoint (JSON response)
+app.UseHealthChecks("/health", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+{
+    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+});
+
+// Health Checks UI dashboard
+app.UseHealthChecksUI(options =>
+{
+    options.UIPath = "/health-ui";
+    options.ApiPath = "/health-ui-api";
+});
 
 // Configure Ocelot middleware - must be before MapControllers and MapGet
 app.UseSwaggerForOcelotUI(options =>
