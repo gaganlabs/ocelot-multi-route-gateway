@@ -1,5 +1,11 @@
 # .NET 8 Microservices with Ocelot Multi-Route API Gateway
 
+![.NET](https://img.shields.io/badge/.NET-8.0-512BD4?logo=dotnet&logoColor=white)
+![C#](https://img.shields.io/badge/C%23-12.0-239120?logo=c-sharp&logoColor=white)
+![Ocelot](https://img.shields.io/badge/Ocelot-23.3.3-FF6B6B?logo=dotnet&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white)
+![License](https://img.shields.io/badge/License-MIT-green.svg)
+
 A complete microservices solution built with .NET 8, featuring an **Ocelot Multi-Route API Gateway** (one route file per microservice), multiple microservices using Minimal APIs, Docker containerization, and Docker Compose orchestration.
 
 ## 🎯 What is Multi-Route Gateway?
@@ -79,7 +85,7 @@ ocelot-multi-route-gateway/
 ### Gateway (Ocelot)
 - ✅ Centralized routing to microservices
 - ✅ Multi-authentication schemes (JWT Bearer and OpenID Connect)
-- ✅ Request/Response logging with Serilog
+- ✅ Built-in .NET logging (ILogger)
 - ✅ Circuit breaker and retry policies (Polly integration)
 - ✅ **Health Checks UI Dashboard** - Real-time health monitoring with visual dashboard
 - ✅ Health check aggregation for all services
@@ -559,24 +565,28 @@ Each route can have custom QoS settings:
 
 ## 📊 Logging
 
-The gateway uses **Serilog** for structured logging:
+The gateway uses the built-in **.NET logging framework** (ILogger):
 
 - **Console output:** Real-time logs in console
-- **File logging:** Logs saved to `logs/gateway-YYYYMMDD.txt`
-- **Request logging:** HTTP request/response logging enabled
+- **Structured logging:** Uses .NET's ILogger interface
+- **Log levels:** Configurable through `appsettings.json`
 
 Log levels can be configured in `appsettings.json`:
 ```json
-"Serilog": {
-  "MinimumLevel": {
+"Logging": {
+  "LogLevel": {
     "Default": "Information",
-    "Override": {
-      "Microsoft": "Warning",
-      "System": "Warning"
-    }
+    "Microsoft.AspNetCore": "Warning",
+    "Ocelot": "Information"
   }
 }
 ```
+
+The gateway logs important events including:
+- Application startup and shutdown
+- Route configuration loading
+- Health check status
+- Error and exception details
 
 ## 🔄 Circuit Breaker & Retry Policies (QoS)
 
@@ -1041,7 +1051,7 @@ dotnet sln add src/NewService/NewService.csproj
 - [Ocelot Documentation](https://ocelot.readthedocs.io/)
 - [.NET 8 Minimal APIs](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/minimal-apis)
 - [Docker Compose Documentation](https://docs.docker.com/compose/)
-- [Serilog Documentation](https://serilog.net/)
+- [.NET Logging](https://learn.microsoft.com/en-us/dotnet/core/extensions/logging)
 
 ## 📝 License
 
