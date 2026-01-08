@@ -1,4 +1,8 @@
 using System.Collections.Concurrent;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
+using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,7 +14,7 @@ builder.Services.AddSwaggerGen(c =>
     {
         Title = "User Service API",
         Version = "v1",
-        Description = "User Service API for managing users"
+        Description = "User Service API for managing users and generating JWT tokens"
     });
 });
 builder.Services.AddHealthChecks();
@@ -113,6 +117,153 @@ app.MapDelete("/api/users/{id}", (int id) =>
 
 app.MapGet("/", () => "UserService is running!");
 
+// Token endpoints
+app.MapPost("/api/token/generate", (TokenRequest request, IConfiguration configuration, ILogger<Program> logger) =>
+{
+    if (request == null || string.IsNullOrWhiteSpace(request.Username))
+    {
+        return Results.BadRequest(new { error = "Username is required" });
+    }
+
+    try
+    {
+        var jwtSettings = configuration.GetSection("JwtSettings");
+        var secretKey = jwtSettings["SecretKey"] 
+            ?? throw new InvalidOperationException("JWT SecretKey is not configured");
+        
+        var issuer = jwtSettings["Issuer"] ?? "UserService";
+        var audience = jwtSettings["Audience"] ?? "Microservices";
+        var expirationMinutes = int.Parse(jwtSettings["ExpirationMinutes"] ?? "60");
+
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
+        var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+        var claims = new List<Claim>
+        {
+            new Claim(ClaimTypes.NameIdentifier, request.UserId ?? Guid.NewGuid().ToString()),
+            new Claim(ClaimTypes.Name, request.Username),
+            new Claim(JwtRegisteredClaimNames.Sub, request.Username),
+            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+        };
+
+        // Add email claim if provided
+        if (!string.IsNullOrWhiteSpace(request.Email))
+        {
+            claims.Add(new Claim(ClaimTypes.Email, request.Email));
+            claims.Add(new Claim(JwtRegisteredClaimNames.Email, request.Email));
+        }
+
+        // Add roles if provided
+        if (request.Roles != null && request.Roles.Any())
+        {
+            foreach (var role in request.Roles)
+            {
+                claims.Add(new Claim(ClaimTypes.Role, role));
+            }
+        }
+        else
+        {
+            // Default role if none provided
+            claims.Add(new Claim(ClaimTypes.Role, "User"));
+        }
+
+        var token = new JwtSecurityToken(
+            issuer: issuer,
+            audience: audience,
+            claims: claims,
+            expires: DateTime.UtcNow.AddMinutes(expirationMinutes),
+            signingCredentials: credentials
+        );
+
+        var tokenString = new JwtSecurityTokenHandler().WriteToken(token);
+
+        logger.LogInformation("JWT token generated for user: {Username}", request.Username);
+
+        return Results.Ok(new TokenResponse
+        {
+            Token = tokenString,
+            TokenType = "Bearer",
+            ExpiresIn = expirationMinutes * 60, // Convert to seconds
+            ExpiresAt = token.ValidTo
+        });
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "Error generating JWT token for user: {Username}", request.Username);
+        return Results.StatusCode(500);
+    }
+})
+.WithName("GenerateToken")
+.WithTags("Token")
+.Accepts<TokenRequest>("application/json")
+.Produces<TokenResponse>(StatusCodes.Status200OK)
+.Produces(StatusCodes.Status400BadRequest)
+.Produces(StatusCodes.Status500InternalServerError);
+
+app.MapPost("/api/token/validate", (TokenValidationRequest request, IConfiguration configuration, ILogger<Program> logger) =>
+{
+    if (request == null || string.IsNullOrWhiteSpace(request.Token))
+    {
+        return Results.BadRequest(new { error = "Token is required" });
+    }
+
+    try
+    {
+        var jwtSettings = configuration.GetSection("JwtSettings");
+        var secretKey = jwtSettings["SecretKey"] 
+            ?? throw new InvalidOperationException("JWT SecretKey is not configured");
+        
+        var issuer = jwtSettings["Issuer"] ?? "UserService";
+        var audience = jwtSettings["Audience"] ?? "Microservices";
+
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
+        
+        var tokenHandler = new JwtSecurityTokenHandler();
+        var validationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = issuer,
+            ValidAudience = audience,
+            IssuerSigningKey = key,
+            ClockSkew = TimeSpan.Zero
+        };
+
+        var principal = tokenHandler.ValidateToken(request.Token, validationParameters, out SecurityToken validatedToken);
+        
+        var jwtToken = validatedToken as JwtSecurityToken;
+        var claims = principal.Claims.Select(c => new { c.Type, c.Value }).Cast<object>().ToList();
+
+        return Results.Ok(new TokenValidationResponse
+        {
+            IsValid = true,
+            Claims = claims,
+            ExpiresAt = jwtToken?.ValidTo
+        });
+    }
+    catch (SecurityTokenExpiredException)
+    {
+        return Results.Unauthorized();
+    }
+    catch (SecurityTokenInvalidSignatureException)
+    {
+        return Results.Unauthorized();
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "Error validating JWT token");
+        return Results.Unauthorized();
+    }
+})
+.WithName("ValidateToken")
+.WithTags("Token")
+.Accepts<TokenValidationRequest>("application/json")
+.Produces<TokenValidationResponse>(StatusCodes.Status200OK)
+.Produces(StatusCodes.Status400BadRequest)
+.Produces(StatusCodes.Status401Unauthorized);
+
 app.Run();
 
 public record User
@@ -122,3 +273,31 @@ public record User
     public string Email { get; set; } = string.Empty;
 }
 
+// Token DTOs
+public record TokenRequest
+{
+    public string Username { get; set; } = string.Empty;
+    public string? UserId { get; set; } = Guid.NewGuid().ToString();
+    public string? Email { get; set; }
+    public string[]? Roles { get; set; }
+}
+
+public record TokenResponse
+{
+    public string Token { get; set; } = string.Empty;
+    public string TokenType { get; set; } = "Bearer";
+    public int ExpiresIn { get; set; }
+    public DateTime ExpiresAt { get; set; }
+}
+
+public record TokenValidationRequest
+{
+    public string Token { get; set; } = string.Empty;
+}
+
+public record TokenValidationResponse
+{
+    public bool IsValid { get; set; }
+    public List<object>? Claims { get; set; }
+    public DateTime? ExpiresAt { get; set; }
+}

@@ -13,16 +13,79 @@
       "SwaggerKey": "OrderService"
     },
     {
-      "DownstreamPathTemplate": "/api/orders/{everything}",
+      "DownstreamPathTemplate": "/api/orders",
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
         {
-            "Host": "{OrderService}" 
+          "Host": "{OrderService}"
         }
       ],
-      "UpstreamPathTemplate": "/api/orders/{everything}",
-      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
-      "SwaggerKey": "OrderService"
+      "UpstreamPathTemplate": "/api/orders",
+      "UpstreamHttpMethod": [ "GET" ],
+      "SwaggerKey": "OrderService",
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [ "Identity" ]
+      }
+    },
+    {
+      "DownstreamPathTemplate": "/api/orders",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "{OrderService}"
+        }
+      ],
+      "UpstreamPathTemplate": "/api/orders",
+      "UpstreamHttpMethod": [ "POST" ],
+      "SwaggerKey": "OrderService",
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [ "Identity" ]
+      }
+    },
+    {
+      "DownstreamPathTemplate": "/api/orders/{id}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "{OrderService}"
+        }
+      ],
+      "UpstreamPathTemplate": "/api/orders/{id}",
+      "UpstreamHttpMethod": [ "GET" ],
+      "SwaggerKey": "OrderService",
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [ "Identity" ]
+      }
+    },
+    {
+      "DownstreamPathTemplate": "/api/orders/{id}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "{OrderService}"
+        }
+      ],
+      "UpstreamPathTemplate": "/api/orders/{id}",
+      "UpstreamHttpMethod": [ "PUT", "DELETE" ],
+      "SwaggerKey": "OrderService",
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [ "Identity" ]
+      }
+    },
+    {
+      "DownstreamPathTemplate": "/api/orders/user/{userId}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "{OrderService}"
+        }
+      ],
+      "UpstreamPathTemplate": "/api/orders/user/{userId}",
+      "UpstreamHttpMethod": [ "GET" ],
+      "SwaggerKey": "OrderService",
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [ "Identity" ]
+      }
     },
     {
       "DownstreamPathTemplate": "/health",

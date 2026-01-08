@@ -2,27 +2,68 @@
   "Routes": [
     {
       "DownstreamPathTemplate": "/swagger/v1/swagger.json",
-      "SwaggerKey": "UserService",
-      "DownstreamHostAndPorts": [
-        {
-          "Host": "{UserService}"
-        }
-      ],
-      "UpstreamPathTemplate": "/UserService/swagger/v1/swagger.json",
-      "UpstreamHttpMethod": [
-        "GET"
-      ]
-    },
-    {
-      "DownstreamPathTemplate": "/api/users/{everything}",
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
         {
           "Host": "{UserService}"
         }
       ],
-      "UpstreamPathTemplate": "/api/users/{everything}",
-      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
+      "UpstreamPathTemplate": "/UserService/swagger/v1/swagger.json",
+      "UpstreamHttpMethod": [ "GET" ],
+      "SwaggerKey": "UserService"
+    },
+    {
+      "DownstreamPathTemplate": "/api/users",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "{UserService}"
+        }
+      ],
+      "UpstreamPathTemplate": "/api/users",
+      "UpstreamHttpMethod": [ "GET", "POST" ],
+      "SwaggerKey": "UserService",
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [ "Identity" ]
+      }
+    },
+    {
+      "DownstreamPathTemplate": "/api/users/{id}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "{UserService}"
+        }
+      ],
+      "UpstreamPathTemplate": "/api/users/{id}",
+      "UpstreamHttpMethod": [ "GET", "PUT", "DELETE" ],
+      "SwaggerKey": "UserService",
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [ "Identity" ]
+      }
+    },
+    {
+      "DownstreamPathTemplate": "/api/token/generate",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "{UserService}"
+        }
+      ],
+      "UpstreamPathTemplate": "/api/token/generate",
+      "UpstreamHttpMethod": [ "POST" ],
+      "SwaggerKey": "UserService"
+    },
+    {
+      "DownstreamPathTemplate": "/api/token/validate",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "{UserService}"
+        }
+      ],
+      "UpstreamPathTemplate": "/api/token/validate",
+      "UpstreamHttpMethod": [ "POST" ],
       "SwaggerKey": "UserService"
     },
     {

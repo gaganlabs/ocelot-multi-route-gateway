@@ -13,23 +13,71 @@
       "SwaggerKey": "ProductService"
     },
     {
-      "DownstreamPathTemplate": "/api/products/{everything}",
+      "DownstreamPathTemplate": "/api/products",
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
         {
           "Host": "{ProductService}"
         }
       ],
-      "UpstreamPathTemplate": "/api/products/{everything}",
-      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
-      "SwaggerKey": "ProductService"
+      "UpstreamPathTemplate": "/api/products",
+      "UpstreamHttpMethod": [ "GET" ],
+      "SwaggerKey": "ProductService",
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [ "Identity" ]
+      }
+    },
+    {
+      "DownstreamPathTemplate": "/api/products",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "{ProductService}"
+        }
+      ],
+      "UpstreamPathTemplate": "/api/products",
+      "UpstreamHttpMethod": [ "POST" ],
+      "SwaggerKey": "ProductService",
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [ "Identity" ]
+      }
+    },
+    {
+      "DownstreamPathTemplate": "/api/products/{id}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "{ProductService}"
+        }
+      ],
+      "UpstreamPathTemplate": "/api/products/{id}",
+      "UpstreamHttpMethod": [ "GET" ],
+      "SwaggerKey": "ProductService",
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [ "Identity" ]
+      }
+    },
+    {
+      "DownstreamPathTemplate": "/api/products/{id}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "{ProductService}"
+        }
+      ],
+      "UpstreamPathTemplate": "/api/products/{id}",
+      "UpstreamHttpMethod": [ "PUT", "DELETE" ],
+      "SwaggerKey": "ProductService",
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": [ "Identity" ]
+      }
     },
     {
       "DownstreamPathTemplate": "/health",
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
         {
-            "Host": "{ProductService}" 
+          "Host": "{ProductService}"
         }
       ],
       "UpstreamPathTemplate": "/health/products",
