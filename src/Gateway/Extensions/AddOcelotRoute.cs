@@ -1,8 +1,7 @@
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Ocelot.Configuration.File;
 
-namespace DCGONE.DLoop.Gateway.API.Extensions
+namespace Gateway.Extensions
 {
     /// <summary>
     /// Provides extension methods for configuring Ocelot file-based route configurations.
@@ -26,15 +25,14 @@ namespace DCGONE.DLoop.Gateway.API.Extensions
         /// downstream scheme, host, and port accordingly.
         /// </summary>
         /// <param name="configurationBuilder">The configuration builder to extend.</param>
+        /// <param name="configuration">The configuration instance containing GlobalHosts.</param>
         /// <param name="services">The service collection to configure.</param>
         /// <returns>The configuration builder for method chaining.</returns>
         public static IConfigurationBuilder ResolveDownstreamHostPlaceholders(
-            this IConfigurationBuilder configurationBuilder,
-            IServiceCollection services)
+            this IConfigurationBuilder configurationBuilder, IConfiguration configuration, IServiceCollection services)
         {
             services.PostConfigure<FileConfiguration>(fileConfiguration =>
             {
-                var configuration = configurationBuilder.Build();
                 var globalHosts = configuration.GetSection("GlobalHosts").Get<GlobalHosts>();
 
                 if (globalHosts != null)
@@ -75,7 +73,11 @@ namespace DCGONE.DLoop.Gateway.API.Extensions
         }
     }
 
-    internal class GlobalHosts : Dictionary<string, Uri>
-    {
-    }
+    /// <summary>
+    /// Represents a dictionary mapping service name placeholders to their corresponding URIs.
+    /// This class is used to deserialize the "GlobalHosts" configuration section from appsettings.json,
+    /// where keys are service identifiers (e.g., "Identity", "OrderService") and values are the
+    /// complete URIs (scheme, host, and port) for those services.
+    /// </summary>
+     public class GlobalHosts : Dictionary<string, Uri> { }
 }

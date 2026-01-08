@@ -1,8 +1,12 @@
-using DCGONE.DLoop.Gateway.API.Extensions;
+using Gateway.Configurators;
+using Gateway.Extensions;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
+using MMLib.SwaggerForOcelot.DependencyInjection;
 using Ocelot.DependencyInjection;
 using Ocelot.Middleware;
+using Ocelot.Provider.Polly;
 using Serilog;
 using System.Text;
 
@@ -20,7 +24,7 @@ builder.Host.UseSerilog();
 // Add services to the container
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+// Note: SwaggerGen is configured later for JWT security - SwaggerForOcelot handles the main Swagger setup
 
 // Configure JWT Authentication
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
@@ -45,16 +49,25 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-// Add Ocelot
-builder.Configuration.AddJsonFile("ocelot.json", optional: false, reloadOnChange: true);
-builder.Services.AddOcelot(builder.Configuration);
+var routes = "routes";
+
+builder.Configuration.AddOcelotWithSwaggerSupport(options =>
+{
+    options.Folder = routes;
+});
+
+// Add Ocelot services after configuration is loaded
+builder.Services.AddOcelot(builder.Configuration)
+    .AddPolly();
 
 builder.Services.AddSwaggerForOcelot(builder.Configuration);
 
+// Add Ocelot - Load all configuration files first
 builder.Configuration.SetBasePath(Directory.GetCurrentDirectory())
-    .AddJsonFile("appsettings.json", false, true)
+    .AddJsonFile("ocelot.json", optional: false, reloadOnChange: true)
     .AddOcelot("routes", builder.Environment, mergeTo: MergeOcelotJson.ToMemory, optional: false, reloadOnChange: true)
-    .ResolveDownstreamHostPlaceholders(builder.Services);
+    .ResolveDownstreamHostPlaceholders(builder.Configuration, builder.Services)
+    .AddEnvironmentVariables();
 
 // Add CORS
 builder.Services.AddCors(options =>     
@@ -73,11 +86,8 @@ builder.Services.AddHealthChecks();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+// Note: UseSwaggerForOcelotUI replaces the standard Swagger UI
+// Do not use app.UseSwagger() and app.UseSwaggerUI() when using SwaggerForOcelot
 
 app.UseSerilogRequestLogging();
 
@@ -89,7 +99,16 @@ app.UseAuthorization();
 app.UseHealthChecks("/health");
 
 // Configure Ocelot middleware - must be before MapControllers and MapGet
-app.UseOcelot().Wait();
+app.UseSwaggerForOcelotUI(options =>
+{
+    options.PathToSwaggerGenerator = "/swagger/docs";
+    options.ReConfigureUpstreamSwaggerJson = AlterUpstream.ConfigureUpstreamSecurity;
+}, uiOptions =>
+{
+    uiOptions.DefaultModelsExpandDepth(-1);
+});
+
+app.UseOcelot(OcelotPipelineConfigurator.CreatePipelineConfiguration()).Wait();
 
 app.MapControllers();
 

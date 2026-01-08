@@ -4,7 +4,15 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
+    {
+        Title = "Product Service API",
+        Version = "v1",
+        Description = "Product Service API for managing products"
+    });
+});
 builder.Services.AddHealthChecks();
 
 // In-memory data store (replace with actual database in production)
@@ -18,9 +26,12 @@ products.TryAdd(3, new Product { Id = 3, Name = "Tablet", Description = "10-inch
 var app = builder.Build();
 
 // Configure the HTTP request pipeline
+// Always enable Swagger JSON endpoint for gateway integration
+app.UseSwagger();
+
+// Only show Swagger UI in Development
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
     app.UseSwaggerUI();
 }
 

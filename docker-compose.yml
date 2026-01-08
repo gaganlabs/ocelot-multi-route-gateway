@@ -5,12 +5,17 @@ services:
     build:
       context: .
       dockerfile: src/Gateway/Dockerfile
+      args:
+        BUILD_CONFIGURATION: Release
     container_name: ocelot-gateway
     ports:
       - "5000:5000"
     environment:
-      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_URLS=http://0.0.0.0:5000
+      - GlobalHosts__UserService=http://userservice:5001
+      - GlobalHosts__OrderService=http://orderservice:5002
+      - GlobalHosts__ProductService=http://productservice:5003
     depends_on:
       - userservice
       - orderservice
@@ -23,11 +28,13 @@ services:
     build:
       context: .
       dockerfile: src/UserService/Dockerfile
+      args:
+        BUILD_CONFIGURATION: Release
     container_name: user-service
     ports:
       - "5001:5001"
     environment:
-      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_URLS=http://0.0.0.0:5001
     networks:
       - microservices-network
@@ -37,11 +44,13 @@ services:
     build:
       context: .
       dockerfile: src/OrderService/Dockerfile
+      args:
+        BUILD_CONFIGURATION: Release
     container_name: order-service
     ports:
       - "5002:5002"
     environment:
-      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_URLS=http://0.0.0.0:5002
     networks:
       - microservices-network
@@ -51,11 +60,13 @@ services:
     build:
       context: .
       dockerfile: src/ProductService/Dockerfile
+      args:
+        BUILD_CONFIGURATION: Release
     container_name: product-service
     ports:
       - "5003:5003"
     environment:
-      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_URLS=http://0.0.0.0:5003
     networks:
       - microservices-network

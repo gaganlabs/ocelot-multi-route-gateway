@@ -4,7 +4,17 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
+    {
+        Title = "User Service API",
+        Version = "v1",
+        Description = "User Service API for managing users"
+    });
+});
+
 builder.Services.AddHealthChecks();
 
 // In-memory data store (replace with actual database in production)
@@ -17,11 +27,8 @@ orders.TryAdd(2, new Order { Id = 2, UserId = 2, ProductId = 2, Quantity = 1, To
 var app = builder.Build();
 
 // Configure the HTTP request pipeline
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+// Always enable Swagger JSON endpoint for gateway integration
+app.UseSwagger();
 
 app.UseHealthChecks("/health");
 
